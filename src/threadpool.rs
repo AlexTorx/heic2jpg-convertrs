@@ -1,6 +1,8 @@
 use std::sync::{Arc,Mutex,mpsc};
 use std::thread;
 
+use log::info;
+
 
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
@@ -27,6 +29,13 @@ impl ThreadPool {
 
         ThreadPool { threads, sender }
     }
+
+    pub fn spawn<F>(&self, f: F)
+        where F: FnOnce() + Send + 'static
+    {
+        let job = Box::new(f);
+        self.sender.send(job).expect("The thread pool has no thread");
+    }
 }
 
 
@@ -40,8 +49,14 @@ impl Worker {
     fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Self {
         let thread = thread::spawn(move || {
             loop {
-                let job = receiver.lock().unwrap().recv().unwrap();
-                (job)();
+                match receiver.lock().unwrap().recv() {
+                    Ok(job) => {
+                        job();
+                    },
+                    Err(_) => {
+                        info!("Thread fails because the pool is destroyed");
+                    }
+                };
             }
         });
 

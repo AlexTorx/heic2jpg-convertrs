@@ -1,2 +1,2 @@
-# heif2jpg-convertrs
-CLI for HEIF from iPhone to JPEG photo conversion
+# heic2jpg-convertrs
+CLI for HEIC from iPhone to JPEG photo conversion
