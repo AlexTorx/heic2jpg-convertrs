@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 
 pub fn generate_jpeg_filename_from_heif(
-    heif_file: PathBuf,
-    output_folder: PathBuf,
+    heif_file: &PathBuf,
+    output_folder: &PathBuf,
 ) -> PathBuf {
     // Creates the target output file from source HEIF filepath
     //

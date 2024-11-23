@@ -4,7 +4,7 @@ use std::process::exit;
 use clap::Parser;
 use log::{error,info,LevelFilter};
 
-use heic2jpeg::ThreadPool;
+use heic2jpeg::{ThreadPool,convert_heic_to_jpeg};
 
 
 #[derive(Parser,Debug)]
@@ -58,18 +58,20 @@ fn main() -> () {
         })
         .map(|f| f.path());
 
-
+    // Send all tasks to the thread pool
     for image in images {
-        // info!("New file detected : {}", image.display());
+        let output = args.output.clone();
         pool.spawn(move || {
-            info!("New file detected : {}", image.display());
+            convert_heic_to_jpeg(&image, &output);
         });
     }
-    // std::thread::sleep(std::time::Duration::from_secs(20));
+
+    // Wait for all tasks to be executed
+    pool.join();
 }
 
 fn setup_logger() {
     env_logger::builder()
-        .filter(None, LevelFilter::Info)
+        .filter(None, LevelFilter::Debug)
         .init();
 }
