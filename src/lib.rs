@@ -3,4 +3,4 @@ pub use threadpool::ThreadPool;
 
 mod threadpool;
 pub mod utils;
-mod convert;
+pub mod convert;

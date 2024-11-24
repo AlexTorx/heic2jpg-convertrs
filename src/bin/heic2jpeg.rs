@@ -4,7 +4,7 @@ use std::process::exit;
 use clap::Parser;
 use log::{error,info,LevelFilter};
 
-use heic2jpeg::{ThreadPool,convert_heic_to_jpeg};
+use heic2jpeg::{ThreadPool,convert_heic_to_jpeg,utils};
 
 
 #[derive(Parser,Debug)]
@@ -43,26 +43,37 @@ fn main() -> () {
         exit(1);
     }
 
+    let mut images: Vec<PathBuf> = Vec::new();
+    if args.input.is_dir() {
+        // Create the list of executions
+        images = args.input
+            .read_dir()
+            .unwrap()
+            .filter_map(|f| f.ok())
+            .filter(|f| match f.path().extension() {
+                None => false,
+                Some(ex) => ex.to_str().unwrap().to_lowercase() == "heic",
+            })
+            .map(|f| f.path())
+            .collect::<Vec<PathBuf>>();
+    } else {
+        images.push(args.input.clone());
+    }
+
     // Create the thread pool for parallel processing
     let pool = ThreadPool::new(args.workers);
-    // let pool = ThreadPool::new(1);
-
-    // Create the list of executions
-    let images = args.input
-        .read_dir()
-        .unwrap()
-        .filter_map(|f| f.ok())
-        .filter(|f| match f.path().extension() {
-            None => false,
-            Some(ex) => ex.to_str().unwrap().to_lowercase() == "heic",
-        })
-        .map(|f| f.path());
 
     // Send all tasks to the thread pool
     for image in images {
         let output = args.output.clone();
+        let input = args.input.clone();
         pool.spawn(move || {
-            convert_heic_to_jpeg(&image, &output);
+            if input.is_dir() {
+                let jpeg_file = utils::generate_jpeg_filename_from_heif(&input, &output);
+                convert_heic_to_jpeg(&input, &jpeg_file)
+            } else {
+                convert_heic_to_jpeg(&image, &output);
+            }
         });
     }
 
