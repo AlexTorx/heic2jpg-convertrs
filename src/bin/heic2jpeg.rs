@@ -65,12 +65,12 @@ fn main() -> () {
 
     // Send all tasks to the thread pool
     for image in images {
-        let output = args.output.clone();
         let input = args.input.clone();
+        let output = args.output.clone();
         pool.spawn(move || {
             if input.is_dir() {
-                let jpeg_file = utils::generate_jpeg_filename_from_heif(&input, &output);
-                convert_heic_to_jpeg(&input, &jpeg_file)
+                let jpeg_file = utils::generate_jpeg_filename_from_heif(&image, &output);
+                convert_heic_to_jpeg(&image, &jpeg_file)
             } else {
                 convert_heic_to_jpeg(&image, &output);
             }
