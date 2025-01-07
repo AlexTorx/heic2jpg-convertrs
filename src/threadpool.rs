@@ -1,4 +1,5 @@
 use std::thread;
+use std::process::exit;
 
 use crossbeam::channel::{self,Receiver,Sender};
 use log::{debug,error};
@@ -7,41 +8,52 @@ use log::{debug,error};
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 
+enum WorkerMessage {
+    Terminate,
+    Task(Job),
+}
+
 pub struct ThreadPool {
-    threads: Vec<Worker>,
-    sender: Sender<Job>,
+    workers: Vec<Worker>,
+    sender: Sender<WorkerMessage>,
 }
 
 impl ThreadPool {
     pub fn new(size: usize) -> Self {
 
         // Open channel
-        let (sender,receiver) = channel::unbounded::<Job>();
+        let (sender,receiver) = channel::unbounded::<WorkerMessage>();
 
         // Build the set of threads
-        let mut threads = Vec::with_capacity(size);
+        let mut workers = Vec::with_capacity(size);
         for id in 0..size {
-            threads.push(Worker::new(id, receiver.clone()));
+            workers.push(Worker::new(id, receiver.clone()));
         }
 
-        ThreadPool { threads, sender }
+        ThreadPool { workers, sender }
     }
 
     pub fn spawn<F>(&self, f: F)
         where F: FnOnce() + Send + 'static
     {
         let job = Box::new(f);
-        self.sender.send(job).expect("The thread pool has no thread");
+        self.sender.send(WorkerMessage::Task(job)).expect("The thread pool has no thread");
     }
 
-    pub fn join(&self) {
-        loop {
-            match self.sender.is_empty() {
-                true => {
-                    break;
-                },
-                false => {},
-            };
+    pub fn join(&mut self) {
+        // Send termination message to all workers
+        for _ in &mut self.workers {
+            self.sender.send(WorkerMessage::Terminate).unwrap();
+        }
+
+        debug!("All workers are being shutdown");
+
+        // Wait until all workers join
+        for worker in &mut self.workers {
+            if let Some(thread) = worker.thread.take() {
+                debug!("Shutting down worker {}", worker.id);
+                thread.join().unwrap();
+            }
         }
     }
 }
@@ -50,17 +62,26 @@ impl ThreadPool {
 
 struct Worker {
     id: usize,
-    thread: thread::JoinHandle<()>,
+    thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
-    fn new(id: usize, receiver: Receiver<Job>) -> Self {
+    fn new(id: usize, receiver: Receiver<WorkerMessage>) -> Self {
         debug!("Starting thread worker {}", id);
         let thread = thread::spawn(move || {
             loop {
                 match receiver.recv() {
-                    Ok(job) => {
-                        job();
+                    Ok(msg) => {
+                        match msg {
+                            WorkerMessage::Terminate => {
+                                debug!("Terminating thread worker {} as end request was received", id);
+                                exit(0);
+                            },
+                            WorkerMessage::Task(job) => {
+                                debug!("Worker {} starts running a new job", id);
+                                job();
+                            }
+                        }
                     },
                     Err(_) => {
                         error!("Thread fails because the pool is destroyed");
@@ -69,6 +90,6 @@ impl Worker {
             }
         });
 
-        Worker { id, thread }
+        Worker { id, thread: Some(thread) }
     }
 }
