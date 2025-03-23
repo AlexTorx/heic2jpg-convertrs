@@ -2,9 +2,9 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
 
-use image::{RgbImage,DynamicImage};
+use image::DynamicImage;
 use libheif_rs::{
-    ColorSpace,HeifContext,LibHeif,Chroma,RgbChroma,
+    ColorSpace,HeifContext,LibHeif,RgbChroma,
 };
 
 
@@ -34,7 +34,7 @@ pub fn convert_heic_to_jpeg(heic_file: &PathBuf, jpeg_file: &PathBuf) -> () {
     let dyn_image = DynamicImage::ImageRgba8(rgb_image).to_rgb8();
 
     let mut file = File::create(jpeg_file).unwrap();
-    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut file, 100);
-    // dyn_image.write_to(&mut file, image::ImageFormat::Jpeg).unwrap();
+    // image::codecs::jpeg::JpegEncoder::new_with_quality(&mut file, 100);
+    dyn_image.write_to(&mut file, image::ImageFormat::Jpeg).unwrap();
     file.flush().unwrap();
 }
