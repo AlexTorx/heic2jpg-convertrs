@@ -60,25 +60,41 @@ fn main() -> () {
         images.push(args.input.clone());
     }
 
-    // Create the thread pool for parallel processing
-    let pool = ThreadPool::new(args.workers);
-
-    // Send all tasks to the thread pool
     for image in images {
         let input = args.input.clone();
         let output = args.output.clone();
-        pool.spawn(move || {
-            if input.is_dir() {
-                let jpeg_file = utils::generate_jpeg_filename_from_heif(&image, &output);
-                convert_heic_to_jpeg(&image, &jpeg_file)
-            } else {
-                convert_heic_to_jpeg(&image, &output);
-            }
-        });
+
+        print!("Starting processing file : {:?}", image);
+        if input.is_dir() {
+            let jpeg_file = utils::generate_jpeg_filename_from_heif(&image, &output);
+            convert_heic_to_jpeg(&image, &jpeg_file)
+        } else {
+            convert_heic_to_jpeg(&image, &output);
+        }
+        println!(" ... DONE !");
     }
 
+    // exit(1);
+
+    // Create the thread pool for parallel processing
+    // let mut pool = ThreadPool::new(args.workers);
+
+    // Send all tasks to the thread pool
+    // for image in images {
+    //     let input = args.input.clone();
+    //     let output = args.output.clone();
+    //     pool.spawn(move || {
+    //         if input.is_dir() {
+    //             let jpeg_file = utils::generate_jpeg_filename_from_heif(&image, &output);
+    //             convert_heic_to_jpeg(&image, &jpeg_file)
+    //         } else {
+    //             convert_heic_to_jpeg(&image, &output);
+    //         }
+    //     });
+    // }
+
     // Wait for all tasks to be executed
-    pool.join();
+    // pool.join();
 }
 
 fn setup_logger() {

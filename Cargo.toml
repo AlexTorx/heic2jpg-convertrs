@@ -7,8 +7,15 @@ edition = "2021"
 clap = { version = "4.5.21", features = ["derive", "cargo"] }
 crossbeam = { version = "0.8.4", features = ["crossbeam-channel"] }
 env_logger = "0.11.5"
+image = "0.25.5"
+# libheif-rs = { version = "1.0.2", features = ["use-bindgen"] }
+libheif-rs = { version = "1.0.2" }
 log = "0.4.22"
 num_cpus = "1.16.0"
 
 [dev-dependencies]
 assert_cmd = "2.0.16"
+
+# [package.metadata.vcpkg]
+# git = "https://github.com/microsoft/vcpkg"
+# rev = "4c1db68"
