@@ -43,6 +43,7 @@ fn main() -> () {
         exit(1);
     }
 
+    // Create the array of images to process
     let mut images: Vec<PathBuf> = Vec::new();
     if args.input.is_dir() {
         // Create the list of executions
@@ -60,41 +61,29 @@ fn main() -> () {
         images.push(args.input.clone());
     }
 
+    // Create the thread pool for parallel processing
+    let mut pool = ThreadPool::new(args.workers);
+
+    // Send all tasks to the thread pool
     for image in images {
         let input = args.input.clone();
         let output = args.output.clone();
-
-        print!("Starting processing file : {:?}", image);
-        if input.is_dir() {
-            let jpeg_file = utils::generate_jpeg_filename_from_heif(&image, &output);
-            convert_heic_to_jpeg(&image, &jpeg_file)
-        } else {
-            convert_heic_to_jpeg(&image, &output);
-        }
-        println!(" ... DONE !");
+        pool.spawn(move || {
+            info!("Starting processing file : {:?}", image);
+            if input.is_dir() {
+                let jpeg_file = utils::generate_jpeg_filename_from_heif(&image, &output);
+                convert_heic_to_jpeg(&image, &jpeg_file)
+            } else {
+                convert_heic_to_jpeg(&image, &output);
+            }
+        });
     }
 
-    // exit(1);
-
-    // Create the thread pool for parallel processing
-    // let mut pool = ThreadPool::new(args.workers);
-
-    // Send all tasks to the thread pool
-    // for image in images {
-    //     let input = args.input.clone();
-    //     let output = args.output.clone();
-    //     pool.spawn(move || {
-    //         if input.is_dir() {
-    //             let jpeg_file = utils::generate_jpeg_filename_from_heif(&image, &output);
-    //             convert_heic_to_jpeg(&image, &jpeg_file)
-    //         } else {
-    //             convert_heic_to_jpeg(&image, &output);
-    //         }
-    //     });
-    // }
-
     // Wait for all tasks to be executed
-    // pool.join();
+    pool.join();
+
+    // Exit CLI
+    exit(0);
 }
 
 fn setup_logger() {

@@ -46,18 +46,15 @@ impl ThreadPool {
             self.sender.send(WorkerMessage::Terminate).unwrap();
         }
 
-        debug!("All workers are being shutdown");
-
         // Wait until all workers join
         for worker in &mut self.workers {
             if let Some(thread) = worker.thread.take() {
-                debug!("Shutting down worker {}", worker.id);
                 thread.join().unwrap();
+                debug!("Shutting down worker {}", worker.id);
             }
         }
     }
 }
-
 
 
 struct Worker {
@@ -75,6 +72,9 @@ impl Worker {
                         match msg {
                             WorkerMessage::Terminate => {
                                 debug!("Terminating thread worker {} as end request was received", id);
+
+                                // Sleeping is necessary to make sure all thread actually end
+                                std::thread::sleep(std::time::Duration::from_millis(1000));
                                 exit(0);
                             },
                             WorkerMessage::Task(job) => {
