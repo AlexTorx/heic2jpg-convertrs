@@ -1,5 +1,4 @@
 use std::thread;
-use std::process::exit;
 
 use crossbeam::channel::{self,Receiver,Sender};
 use log::{debug,error};
@@ -67,15 +66,13 @@ impl Worker {
         debug!("Starting thread worker {}", id);
         let thread = thread::spawn(move || {
             loop {
-                match receiver.recv() {
+                let message = receiver.recv();
+                match message {
                     Ok(msg) => {
                         match msg {
                             WorkerMessage::Terminate => {
                                 debug!("Terminating thread worker {} as end request was received", id);
-
-                                // Sleeping is necessary to make sure all thread actually end
-                                std::thread::sleep(std::time::Duration::from_millis(1000));
-                                exit(0);
+                                break;
                             },
                             WorkerMessage::Task(job) => {
                                 debug!("Worker {} starts running a new job", id);
