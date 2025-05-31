@@ -17,8 +17,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run:
-        - apt install -y --no-install-recommends libheif-dev
-        - cargo build --verbose
+      run: |
+        apt install -y --no-install-recommends libheif-dev
+        cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
